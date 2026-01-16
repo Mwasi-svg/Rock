@@ -1,38 +1,61 @@
-import { useState } from 'react'
-import UpdateElectron from '@/components/update'
-import logoVite from './assets/logo-vite.svg'
-import logoElectron from './assets/logo-electron.svg'
-import './App.css'
+import { useState, useEffect } from "react";
+import { AnimatePresence } from "framer-motion";
+import { AppLayout } from "./components/layout/AppLayout";
+import { Sidebar, TabId } from "./components/layout/Sidebar";
+import { CalendarPage } from "./pages/Calendar";
+import { DashboardPage } from "./pages/Dashboard";
+import { TodoPage } from "./pages/Todo";
+import { FinancePage } from "./pages/Finance";
+import { ProjectsPage } from "./pages/Projects";
+import { GitPage } from "./pages/Git";
+import { SettingsPage } from "./pages/Settings";
+import { NotificationProvider } from "./lib/NotificationContext";
+import { ActionProvider } from "./lib/ActionContext";
 
 function App() {
-  const [count, setCount] = useState(0)
-  return (
-    <div className='App'>
-      <div className='logo-box'>
-        <a href='https://github.com/electron-vite/electron-vite-react' target='_blank'>
-          <img src={logoVite} className='logo vite' alt='Electron + Vite logo' />
-          <img src={logoElectron} className='logo electron' alt='Electron + Vite logo' />
-        </a>
-      </div>
-      <h1>Electron + Vite + React</h1>
-      <div className='card'>
-        <button onClick={() => setCount((count) => count + 1)}>
-          count is {count}
-        </button>
-        <p>
-          Edit <code>src/App.tsx</code> and save to test HMR
-        </p>
-      </div>
-      <p className='read-the-docs'>
-        Click on the Electron + Vite logo to learn more
-      </p>
-      <div className='flex-center'>
-        Place static files into the<code>/public</code> folder <img style={{ width: '5em' }} src='./node.svg' alt='Node logo' />
-      </div>
+  // Determine initial tab: Check localStorage first, known hash, then default to 'home'
+  const savedTab = localStorage.getItem("rock-active-tab") as TabId | null;
+  const activeTabMatch = window.location.hash.replace("#", "") as TabId;
+  const [activeTab, setActiveTab] = useState<TabId>(savedTab || activeTabMatch || "home");
 
-      <UpdateElectron />
-    </div>
-  )
+  // Save active tab to localStorage whenever it changes
+  useEffect(() => {
+    if (activeTab) {
+      localStorage.setItem("rock-active-tab", activeTab);
+    }
+  }, [activeTab]);
+
+  // Apply saved theme on app startup
+  useEffect(() => {
+    try {
+      const stored = localStorage.getItem('rock-settings');
+      if (stored) {
+        const settings = JSON.parse(stored);
+        const themeId = settings.theme;
+        if (themeId && themeId !== 'default') {
+          document.documentElement.setAttribute('data-theme', themeId);
+        }
+      }
+    } catch { /* ignore */ }
+  }, []);
+
+  return (
+    <NotificationProvider>
+      <ActionProvider>
+        <AppLayout activeTab={activeTab} onTabChange={setActiveTab}>
+          <AnimatePresence mode="wait">
+            {activeTab === "home" && <DashboardPage key="home" />}
+            {activeTab === "projects" && <ProjectsPage key="projects" />}
+            {activeTab === "calendar" && <CalendarPage key="calendar" />}
+            {activeTab === "todo" && <TodoPage key="todo" />}
+            {activeTab === "finance" && <FinancePage key="finance" />}
+            {activeTab === "git" && <GitPage key="git" />}
+            {activeTab === "settings" && <SettingsPage key="settings" />}
+          </AnimatePresence>
+        </AppLayout>
+      </ActionProvider>
+    </NotificationProvider>
+  );
 }
 
-export default App
+export default App;

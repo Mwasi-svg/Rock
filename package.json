@@ -1,8 +1,9 @@
 {
-  "name": "electron-vite-react",
-  "version": "2.2.0",
+  "name": "rock-app",
+  "productName": "Rock",
+  "version": "1.0.0",
   "main": "dist-electron/main/index.js",
-  "description": "Electron Vite React boilerplate.",
+  "description": "Rock - A comprehensive financial and task management application.",
   "author": "草鞋没号 <308487730@qq.com>",
   "license": "MIT",
   "private": true,
@@ -20,7 +21,15 @@
     "test": "vitest run"
   },
   "dependencies": {
-    "electron-updater": "^6.3.9"
+    "@dnd-kit/core": "^6.3.1",
+    "@dnd-kit/sortable": "^10.0.0",
+    "@dnd-kit/utilities": "^3.2.2",
+    "clsx": "^2.1.1",
+    "electron-updater": "^6.3.9",
+    "framer-motion": "^12.24.7",
+    "lucide-react": "^0.562.0",
+    "recharts": "^3.6.0",
+    "tailwind-merge": "^3.4.0"
   },
   "devDependencies": {
     "@playwright/test": "^1.48.2",

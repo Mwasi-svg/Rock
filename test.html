@@ -1,0 +1,739 @@
+<html lang="en" class="dark">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Nexus Edge Dashboard</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://code.iconify.design/iconify-icon/1.0.7/iconify-icon.min.js"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&amp;display=swap" rel="stylesheet">
+    <style>
+        :root {
+            /* Motion Physics */
+            --ease-spring: cubic-bezier(0.2, 0.8, 0.2, 1);
+            --ease-bounce: cubic-bezier(0.34, 1.56, 0.64, 1);
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #050505;
+            color: #d4d4d8;
+        }
+
+        /* 1. Visual DNA: Texture & Depth */
+        .noise-bg {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            z-index: 50;
+            opacity: 0.02;
+            background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.8' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)'/%3E%3C/svg%3E");
+        }
+
+        .ambient-glow {
+            position: fixed;
+            width: 100vw;
+            height: 100vh;
+            background:
+                radial-gradient(circle at 50% 0%, rgba(120, 119, 198, 0.08) 0%, transparent 40%),
+                radial-gradient(circle at 85% 30%, rgba(255, 255, 255, 0.02) 0%, transparent 30%);
+            z-index: 0;
+            pointer-events: none;
+        }
+
+        /* Specular Highlight Glass Card */
+        .glass-card {
+            background: rgba(20, 20, 22, 0.6);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border: 1px solid rgba(255, 255, 255, 0.03);
+            /* Top inner highlight */
+            box-shadow: inset 0 1px 0 0 rgba(255, 255, 255, 0.05), 0 10px 40px -10px rgba(0, 0, 0, 0.5);
+            border-radius: 1.5rem;
+            /* 24px */
+            transition: transform 0.4s var(--ease-spring),
+                box-shadow 0.4s var(--ease-spring),
+                filter 0.3s ease;
+        }
+
+        /* 2. Motion Choreography: Entrance */
+        @keyframes slideUpFade {
+            0% {
+                opacity: 0;
+                transform: translateY(20px) scale(0.98);
+            }
+
+            100% {
+                opacity: 1;
+                transform: translateY(0) scale(1);
+            }
+        }
+
+        .animate-enter {
+            opacity: 0;
+            animation: slideUpFade 0.8s var(--ease-spring) forwards;
+        }
+
+        /* Stagger Delays */
+        .delay-1 {
+            animation-delay: 100ms;
+        }
+
+        .delay-2 {
+            animation-delay: 200ms;
+        }
+
+        .delay-3 {
+            animation-delay: 300ms;
+        }
+
+        .delay-4 {
+            animation-delay: 400ms;
+        }
+
+        .delay-5 {
+            animation-delay: 500ms;
+        }
+
+        /* 3. Micro-Interactions: The Lift & Press */
+        .interactive-card:hover {
+            transform: translateY(-2px) scale(1.01);
+            filter: brightness(1.1);
+            box-shadow: inset 0 1px 0 0 rgba(255, 255, 255, 0.1), 0 30px 60px -12px rgba(0, 0, 0, 0.6);
+            z-index: 10;
+        }
+
+        .interactive-card:active {
+            transform: scale(0.98);
+        }
+
+        /* Custom Button Ripple/Scale */
+        .btn-action {
+            transition: all 0.2s var(--ease-spring);
+        }
+
+        .btn-action:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 0 15px rgba(255, 255, 255, 0.1);
+        }
+
+        .btn-action:active {
+            transform: scale(0.95);
+        }
+
+        /* Physics Toggle Switch */
+        .toggle-wrapper {
+            position: relative;
+            cursor: pointer;
+        }
+
+        .toggle-input {
+            display: none;
+        }
+
+        .toggle-track {
+            width: 44px;
+            height: 24px;
+            background: #27272a;
+            border-radius: 999px;
+            border: 1px solid #3f3f46;
+            transition: background 0.4s var(--ease-spring), border-color 0.4s ease;
+            position: relative;
+        }
+
+        .toggle-handle {
+            position: absolute;
+            top: 2px;
+            left: 2px;
+            width: 18px;
+            height: 18px;
+            background: white;
+            border-radius: 50%;
+            transition: transform 0.5s var(--ease-bounce), width 0.2s ease;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+        }
+
+        /* Morphing logic handled via JS interaction class adding for 'stretching' */
+        .toggle-input:checked+.toggle-track {
+            background: rgba(16, 185, 129, 0.2);
+            border-color: rgba(16, 185, 129, 0.5);
+        }
+
+        .toggle-input:checked+.toggle-track .toggle-handle {
+            transform: translateX(20px);
+            background: #fff;
+        }
+
+        .toggle-wrapper:active .toggle-handle {
+            width: 22px;
+            /* Stretch effect */
+        }
+
+        /* 4. Data Viz: Chart Drawing */
+        .chart-path {
+            stroke-dasharray: 1000;
+            stroke-dashoffset: 1000;
+            animation: drawLine 2.5s var(--ease-spring) forwards;
+            animation-delay: 0.3s;
+        }
+
+        @keyframes drawLine {
+            to {
+                stroke-dashoffset: 0;
+            }
+        }
+
+        .chart-gradient {
+            opacity: 0;
+            animation: fadeIn 1.5s ease-out forwards;
+            animation-delay: 0.8s;
+        }
+
+        @keyframes fadeIn {
+            to {
+                opacity: 1;
+            }
+        }
+
+        /* Custom Scrollbar */
+        ::-webkit-scrollbar {
+            width: 0px;
+            background: transparent;
+        }
+
+        /* Optimistic Toast */
+        .toast {
+            position: fixed;
+            bottom: 32px;
+            right: 32px;
+            padding: 12px 24px;
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 99px;
+            color: white;
+            font-size: 0.875rem;
+            transform: translateY(100px);
+            opacity: 0;
+            transition: transform 0.5s var(--ease-spring), opacity 0.4s ease;
+            z-index: 100;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            box-shadow: 0 10px 30px -5px rgba(0, 0, 0, 0.5);
+        }
+
+        .toast.show {
+            transform: translateY(0);
+            opacity: 1;
+        }
+    </style>
+</head>
+
+<body class="min-h-screen text-zinc-300 antialiased overflow-hidden selection:bg-zinc-700 selection:text-white">
+
+    <!-- Ambient Backgrounds -->
+    <div class="noise-bg"></div>
+    <div class="ambient-glow"></div>
+
+    <!-- Layout -->
+    <div class="flex h-screen relative z-10">
+
+        <!-- Sidebar -->
+        <aside
+            class="w-16 md:w-64 border-r border-white/5 flex flex-col justify-between py-6 px-3 md:px-5 bg-black/20 backdrop-blur-xl z-40 hidden md:flex">
+            <div>
+                <!-- Logo -->
+                <div class="flex items-center gap-3 mb-10 px-2 cursor-pointer group btn-action">
+                    <div
+                        class="w-8 h-8 rounded-lg bg-gradient-to-tr from-zinc-800 to-zinc-900 flex items-center justify-center border border-white/10 shadow-lg shadow-black/50">
+                        <span class="text-white font-semibold tracking-tighter text-sm">N</span>
+                    </div>
+                    <span
+                        class="text-sm font-medium text-zinc-100 tracking-tight opacity-0 md:opacity-100 transition-opacity">Nexus</span>
+                </div>
+
+                <!-- Nav Items -->
+                <nav class="space-y-1">
+                    <a href="#"
+                        class="flex items-center gap-3 px-3 py-2.5 rounded-xl bg-white/5 text-zinc-100 text-sm transition-all duration-300 border border-white/5 shadow-[inset_0_1px_0_rgba(255,255,255,0.05)] btn-action">
+                        <iconify-icon icon="lucide:layout-grid" width="18" stroke-width="1.5"></iconify-icon>
+                        <span class="hidden md:block">Overview</span>
+                    </a>
+                    <a href="#"
+                        class="flex items-center gap-3 px-3 py-2.5 rounded-xl text-zinc-500 hover:text-zinc-100 hover:bg-white/5 text-sm transition-all duration-300 btn-action hover:border hover:border-white/5">
+                        <iconify-icon icon="lucide:activity" width="18" stroke-width="1.5"></iconify-icon>
+                        <span class="hidden md:block">Deployments</span>
+                    </a>
+                    <a href="#"
+                        class="flex items-center gap-3 px-3 py-2.5 rounded-xl text-zinc-500 hover:text-zinc-100 hover:bg-white/5 text-sm transition-all duration-300 btn-action hover:border hover:border-white/5">
+                        <iconify-icon icon="lucide:globe" width="18" stroke-width="1.5"></iconify-icon>
+                        <span class="hidden md:block">Edge Network</span>
+                    </a>
+                    <a href="#"
+                        class="flex items-center gap-3 px-3 py-2.5 rounded-xl text-zinc-500 hover:text-zinc-100 hover:bg-white/5 text-sm transition-all duration-300 btn-action hover:border hover:border-white/5">
+                        <iconify-icon icon="lucide:database" width="18" stroke-width="1.5"></iconify-icon>
+                        <span class="hidden md:block">Storage</span>
+                    </a>
+                </nav>
+            </div>
+
+            <!-- User -->
+            <div class="px-1">
+                <div
+                    class="flex items-center gap-3 p-2 rounded-xl hover:bg-white/5 transition-all cursor-pointer border border-transparent hover:border-white/5 btn-action">
+                    <div
+                        class="w-8 h-8 rounded-full bg-gradient-to-b from-zinc-700 to-zinc-800 border border-white/10 relative overflow-hidden">
+                        <img src="https://i.pravatar.cc/150?u=a042581f4e29026704d" alt="User"
+                            class="w-full h-full object-cover opacity-80 hover:opacity-100 transition-opacity">
+                    </div>
+                    <div class="hidden md:block">
+                        <div class="text-xs text-zinc-200 font-medium">Alex Chen</div>
+                        <div class="text-[10px] text-zinc-500">Pro Plan</div>
+                    </div>
+                </div>
+            </div>
+        </aside>
+
+        <!-- Main Content -->
+        <main class="flex-1 h-full overflow-y-auto relative z-10 scroll-smooth">
+            <div class="max-w-[1600px] mx-auto p-6 md:p-10 lg:p-12">
+
+                <!-- Header -->
+                <header class="flex justify-between items-start md:items-center mb-12 animate-enter">
+                    <div>
+                        <div class="flex items-center gap-2 text-xs text-zinc-500 mb-2 font-medium tracking-tight">
+                            <span>alex-chen</span>
+                            <iconify-icon icon="lucide:chevron-right" width="10" class="opacity-50"></iconify-icon>
+                            <span>nexus-app</span>
+                            <iconify-icon icon="lucide:chevron-right" width="10" class="opacity-50"></iconify-icon>
+                            <span class="text-zinc-300">production</span>
+                        </div>
+                        <h1 class="text-3xl font-semibold text-white tracking-tight">Overview</h1>
+                    </div>
+
+                    <div class="flex gap-4 items-center">
+                        <div
+                            class="hidden md:flex items-center gap-2 px-3 py-1.5 rounded-full border border-white/10 bg-white/5 text-xs text-zinc-400 backdrop-blur-md">
+                            <span
+                                class="w-1.5 h-1.5 rounded-full bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.5)] animate-pulse"></span>
+                            Operational
+                        </div>
+                        <button
+                            class="bg-white text-black px-4 py-2 rounded-lg text-sm font-medium hover:bg-zinc-200 transition-all shadow-[0_0_20px_-5px_rgba(255,255,255,0.4)] btn-action flex items-center gap-2 group">
+                            <span>Deploy</span>
+                            <iconify-icon icon="lucide:arrow-up-right" width="16"
+                                class="group-hover:translate-x-0.5 group-hover:-translate-y-0.5 transition-transform"></iconify-icon>
+                        </button>
+                    </div>
+                </header>
+
+                <!-- Bento Grid -->
+                <div class="grid grid-cols-1 md:grid-cols-6 lg:grid-cols-12 gap-6 auto-rows-min">
+
+                    <!-- Stats Card: Traffic -->
+                    <div
+                        class="col-span-1 md:col-span-6 lg:col-span-8 glass-card p-8 relative overflow-hidden group interactive-card animate-enter delay-1 h-96 flex flex-col justify-between">
+                        <div class="flex justify-between items-start z-10 relative">
+                            <div>
+                                <h3 class="text-zinc-400 text-sm font-medium mb-1 flex items-center gap-2">
+                                    <iconify-icon icon="lucide:zap" class="text-zinc-500"></iconify-icon>
+                                    Total Requests
+                                </h3>
+                                <div class="text-4xl font-semibold text-white tracking-tight mt-2">2,405,120</div>
+                                <div class="text-xs text-emerald-400 mt-2 flex items-center gap-1">
+                                    <div
+                                        class="px-1.5 py-0.5 bg-emerald-500/10 rounded border border-emerald-500/20 flex items-center gap-1">
+                                        <iconify-icon icon="lucide:trending-up" width="10"></iconify-icon>
+                                        <span>+12.5%</span>
+                                    </div>
+                                    <span class="text-zinc-600 ml-1">last 24h</span>
+                                </div>
+                            </div>
+                            <div class="flex gap-1 bg-white/5 p-1 rounded-lg border border-white/5 backdrop-blur-sm">
+                                <button
+                                    class="px-3 py-1 rounded-[4px] bg-white/10 text-xs text-white shadow-sm transition-all hover:bg-white/20">1h</button>
+                                <button
+                                    class="px-3 py-1 rounded-[4px] text-xs text-zinc-500 hover:text-white transition-colors">24h</button>
+                                <button
+                                    class="px-3 py-1 rounded-[4px] text-xs text-zinc-500 hover:text-white transition-colors">7d</button>
+                            </div>
+                        </div>
+
+                        <!-- Graph Visualization -->
+                        <div class="absolute bottom-0 left-0 right-0 h-64 w-full pointer-events-none translate-y-2">
+                            <svg viewBox="0 0 800 300" preserveAspectRatio="none" class="w-full h-full">
+                                <defs>
+                                    <linearGradient id="gradientArea" x1="0" x2="0" y1="0" y2="1">
+                                        <stop offset="0%" stop-color="rgba(255, 255, 255, 0.15)"></stop>
+                                        <stop offset="100%" stop-color="rgba(255, 255, 255, 0)"></stop>
+                                    </linearGradient>
+                                </defs>
+                                <path
+                                    d="M0,250 C50,240 100,200 150,220 C200,240 250,150 300,180 C350,210 400,100 450,120 C500,140 550,50 600,90 C650,130 700,80 750,100 L800,110 L800,300 L0,300 Z"
+                                    fill="url(#gradientArea)" class="chart-gradient"></path>
+                                <path
+                                    d="M0,250 C50,240 100,200 150,220 C200,240 250,150 300,180 C350,210 400,100 450,120 C500,140 550,50 600,90 C650,130 700,80 750,100 L800,110"
+                                    fill="none" stroke="rgba(255,255,255,0.8)" stroke-width="2"
+                                    vector-effect="non-scaling-stroke" class="chart-path"></path>
+                            </svg>
+                        </div>
+                    </div>
+
+                    <!-- Latency Map / Region Card -->
+                    <div
+                        class="col-span-1 md:col-span-6 lg:col-span-4 glass-card p-8 relative overflow-hidden group interactive-card animate-enter delay-2 h-96">
+                        <h3 class="text-zinc-400 text-sm font-medium mb-6 flex items-center gap-2">
+                            <iconify-icon icon="lucide:network" class="text-zinc-500"></iconify-icon>
+                            Latency by Region
+                        </h3>
+
+                        <div class="space-y-5">
+                            <!-- Item -->
+                            <div class="group/item cursor-default">
+                                <div class="flex items-center justify-between mb-2">
+                                    <div class="flex items-center gap-3">
+                                        <div
+                                            class="w-2 h-2 rounded-full bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.5)]">
+                                        </div>
+                                        <span
+                                            class="text-sm text-zinc-300 group-hover/item:text-white transition-colors">sfo1</span>
+                                    </div>
+                                    <span
+                                        class="text-sm font-mono text-zinc-400 group-hover/item:text-white transition-colors">12ms</span>
+                                </div>
+                                <!-- Bar -->
+                                <div class="w-full h-1 bg-zinc-800 rounded-full overflow-hidden">
+                                    <div class="h-full bg-emerald-500 rounded-full w-[0%]"
+                                        style="animation: fillBar 1s var(--ease-spring) forwards 0.5s; width: 12%;">
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Item -->
+                            <div class="group/item cursor-default">
+                                <div class="flex items-center justify-between mb-2">
+                                    <div class="flex items-center gap-3">
+                                        <div class="w-2 h-2 rounded-full bg-emerald-500"></div>
+                                        <span
+                                            class="text-sm text-zinc-300 group-hover/item:text-white transition-colors">iad1</span>
+                                    </div>
+                                    <span
+                                        class="text-sm font-mono text-zinc-400 group-hover/item:text-white transition-colors">24ms</span>
+                                </div>
+                                <div class="w-full h-1 bg-zinc-800 rounded-full overflow-hidden">
+                                    <div class="h-full bg-emerald-500 rounded-full w-[0%]"
+                                        style="animation: fillBar 1s var(--ease-spring) forwards 0.6s; width: 24%;">
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Item -->
+                            <div class="group/item cursor-default">
+                                <div class="flex items-center justify-between mb-2">
+                                    <div class="flex items-center gap-3">
+                                        <div class="w-2 h-2 rounded-full bg-yellow-500"></div>
+                                        <span
+                                            class="text-sm text-zinc-300 group-hover/item:text-white transition-colors">lhr1</span>
+                                    </div>
+                                    <span
+                                        class="text-sm font-mono text-zinc-400 group-hover/item:text-white transition-colors">86ms</span>
+                                </div>
+                                <div class="w-full h-1 bg-zinc-800 rounded-full overflow-hidden">
+                                    <div class="h-full bg-yellow-500 rounded-full w-[0%]"
+                                        style="animation: fillBar 1s var(--ease-spring) forwards 0.7s; width: 60%;">
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Item -->
+                            <div class="group/item cursor-default">
+                                <div class="flex items-center justify-between mb-2">
+                                    <div class="flex items-center gap-3">
+                                        <div class="w-2 h-2 rounded-full bg-emerald-500"></div>
+                                        <span
+                                            class="text-sm text-zinc-300 group-hover/item:text-white transition-colors">hnd1</span>
+                                    </div>
+                                    <span
+                                        class="text-sm font-mono text-zinc-400 group-hover/item:text-white transition-colors">45ms</span>
+                                </div>
+                                <div class="w-full h-1 bg-zinc-800 rounded-full overflow-hidden">
+                                    <div class="h-full bg-emerald-500 rounded-full w-[0%]"
+                                        style="animation: fillBar 1s var(--ease-spring) forwards 0.8s; width: 45%;">
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="absolute bottom-0 right-0 p-8 opacity-10 pointer-events-none mix-blend-overlay">
+                            <iconify-icon icon="lucide:globe-2" width="140"
+                                class="text-white translate-x-1/4 translate-y-1/4 rotate-12"></iconify-icon>
+                        </div>
+                    </div>
+
+                    <style>
+                        @keyframes fillBar {
+                            from {
+                                width: 0;
+                            }
+                        }
+                    </style>
+
+                    <!-- Usage Circular -->
+                    <div
+                        class="col-span-1 md:col-span-3 lg:col-span-3 glass-card p-6 relative overflow-hidden group interactive-card animate-enter delay-3">
+                        <div class="flex justify-between items-start mb-4">
+                            <h3 class="text-zinc-400 text-sm font-medium">Compute Usage</h3>
+                            <iconify-icon icon="lucide:cpu" class="text-zinc-600"></iconify-icon>
+                        </div>
+                        <div class="flex flex-col items-center justify-center py-4">
+                            <div class="relative w-32 h-32 flex items-center justify-center">
+                                <svg class="w-full h-full transform -rotate-90">
+                                    <circle cx="64" cy="64" r="56" stroke="rgba(255,255,255,0.05)" stroke-width="6"
+                                        fill="transparent"></circle>
+                                    <circle cx="64" cy="64" r="56" stroke="url(#paint0_linear)" stroke-width="6"
+                                        fill="transparent" stroke-dasharray="351.86" stroke-dashoffset="351.86"
+                                        stroke-linecap="round"
+                                        style="animation: circleFill 2s var(--ease-spring) forwards 0.5s"></circle>
+                                    <defs>
+                                        <linearGradient id="paint0_linear" x1="0" y1="0" x2="1" y2="1">
+                                            <stop stop-color="#fff"></stop>
+                                            <stop offset="1" stop-color="#52525b"></stop>
+                                        </linearGradient>
+                                    </defs>
+                                </svg>
+                                <div class="absolute text-center">
+                                    <span class="text-3xl font-semibold text-white tracking-tight">78%</span>
+                                </div>
+                            </div>
+                            <style>
+                                @keyframes circleFill {
+                                    to {
+                                        stroke-dashoffset: 80;
+                                    }
+                                }
+                            </style>
+                            <div class="mt-4 text-center">
+                                <p class="text-xs text-zinc-500 font-medium">450h / 1000h</p>
+                                <div class="w-16 h-0.5 bg-zinc-800 mx-auto my-2 rounded-full"></div>
+                                <p class="text-[10px] text-zinc-600 uppercase tracking-widest font-semibold">Resets in
+                                    12d</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Recent Deployments List -->
+                    <div
+                        class="col-span-1 md:col-span-3 lg:col-span-5 glass-card p-0 relative overflow-hidden group interactive-card animate-enter delay-3 flex flex-col">
+                        <div class="p-6 border-b border-white/5 flex justify-between items-center bg-white/[0.01]">
+                            <h3 class="text-zinc-400 text-sm font-medium flex items-center gap-2">
+                                <iconify-icon icon="lucide:git-commit" class="text-zinc-500"></iconify-icon>
+                                Recent Deployments
+                            </h3>
+                            <a href="#" class="text-xs text-zinc-500 hover:text-white transition-colors">View All</a>
+                        </div>
+                        <div class="flex-1 overflow-auto">
+                            <div class="divide-y divide-white/5">
+                                <!-- Row 1 -->
+                                <div
+                                    class="p-4 px-6 flex items-center justify-between hover:bg-white/[0.03] transition-colors cursor-pointer group/row">
+                                    <div class="flex items-center gap-4">
+                                        <div
+                                            class="w-8 h-8 rounded-full bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center shadow-[0_0_10px_rgba(16,185,129,0.1)]">
+                                            <iconify-icon icon="lucide:check" class="text-emerald-500"
+                                                width="14"></iconify-icon>
+                                        </div>
+                                        <div>
+                                            <div
+                                                class="text-sm text-zinc-200 group-hover/row:text-white font-medium transition-colors">
+                                                Update checkout flow</div>
+                                            <div class="text-xs text-zinc-500 flex items-center gap-2 mt-0.5">
+                                                <span
+                                                    class="font-mono bg-white/5 px-1 rounded text-[10px]">7a2b9c</span>
+                                                <span>•</span>
+                                                <span>2m ago</span>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="text-right hidden sm:block">
+                                        <div class="text-xs text-zinc-400">main</div>
+                                        <div class="text-[10px] text-zinc-600 font-medium">Production</div>
+                                    </div>
+                                </div>
+
+                                <!-- Row 2 -->
+                                <div
+                                    class="p-4 px-6 flex items-center justify-between hover:bg-white/[0.03] transition-colors cursor-pointer group/row">
+                                    <div class="flex items-center gap-4">
+                                        <div
+                                            class="w-8 h-8 rounded-full bg-blue-500/10 border border-blue-500/20 flex items-center justify-center animate-pulse">
+                                            <iconify-icon icon="lucide:loader-2" class="text-blue-500 animate-spin"
+                                                width="14"></iconify-icon>
+                                        </div>
+                                        <div>
+                                            <div
+                                                class="text-sm text-zinc-200 group-hover/row:text-white font-medium transition-colors">
+                                                Fix api middleware</div>
+                                            <div class="text-xs text-zinc-500 flex items-center gap-2 mt-0.5">
+                                                <span
+                                                    class="font-mono bg-white/5 px-1 rounded text-[10px]">8b3c1d</span>
+                                                <span>•</span>
+                                                <span class="text-blue-400">Building...</span>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="text-right hidden sm:block">
+                                        <div class="text-xs text-zinc-400">fix/api</div>
+                                        <div class="text-[10px] text-zinc-600 font-medium">Preview</div>
+                                    </div>
+                                </div>
+
+                                <!-- Row 3 -->
+                                <div
+                                    class="p-4 px-6 flex items-center justify-between hover:bg-white/[0.03] transition-colors cursor-pointer group/row">
+                                    <div class="flex items-center gap-4">
+                                        <div
+                                            class="w-8 h-8 rounded-full bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center shadow-[0_0_10px_rgba(16,185,129,0.1)]">
+                                            <iconify-icon icon="lucide:check" class="text-emerald-500"
+                                                width="14"></iconify-icon>
+                                        </div>
+                                        <div>
+                                            <div
+                                                class="text-sm text-zinc-200 group-hover/row:text-white font-medium transition-colors">
+                                                Refactor auth components</div>
+                                            <div class="text-xs text-zinc-500 flex items-center gap-2 mt-0.5">
+                                                <span
+                                                    class="font-mono bg-white/5 px-1 rounded text-[10px]">1f4g8h</span>
+                                                <span>•</span>
+                                                <span>1h ago</span>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="text-right hidden sm:block">
+                                        <div class="text-xs text-zinc-400">feat/auth</div>
+                                        <div class="text-[10px] text-zinc-600 font-medium">Preview</div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Quick Actions / Toggles -->
+                    <div
+                        class="col-span-1 md:col-span-6 lg:col-span-4 glass-card p-6 relative overflow-hidden group interactive-card animate-enter delay-4 flex flex-col justify-between">
+                        <div class="mb-4">
+                            <h3 class="text-zinc-400 text-sm font-medium mb-1">System Control</h3>
+                            <p class="text-xs text-zinc-600">Manage edge configurations instantly.</p>
+                        </div>
+
+                        <div class="space-y-4">
+                            <!-- Toggle 1 -->
+                            <div
+                                class="flex items-center justify-between p-3 rounded-xl bg-white/[0.02] border border-white/5 hover:border-white/10 transition-colors">
+                                <div class="flex items-center gap-3">
+                                    <div class="p-2 rounded-lg bg-black/40 text-zinc-400 border border-white/5">
+                                        <iconify-icon icon="lucide:shield-check" width="16"></iconify-icon>
+                                    </div>
+                                    <div class="flex flex-col">
+                                        <span class="text-sm text-zinc-200 font-medium">WAF Protection</span>
+                                        <span class="text-[10px] text-zinc-500">Block malicious traffic</span>
+                                    </div>
+                                </div>
+                                <label class="toggle-wrapper">
+                                    <input type="checkbox" class="toggle-input">
+                                    <div class="toggle-track">
+                                        <div class="toggle-handle"></div>
+                                    </div>
+                                </label>
+                            </div>
+
+                            <!-- Toggle 2 -->
+                            <div
+                                class="flex items-center justify-between p-3 rounded-xl bg-white/[0.02] border border-white/5 hover:border-white/10 transition-colors">
+                                <div class="flex items-center gap-3">
+                                    <div class="p-2 rounded-lg bg-black/40 text-zinc-400 border border-white/5">
+                                        <iconify-icon icon="lucide:zap" width="16"></iconify-icon>
+                                    </div>
+                                    <div class="flex flex-col">
+                                        <span class="text-sm text-zinc-200 font-medium">Edge Caching</span>
+                                        <span class="text-[10px] text-zinc-500">Cache static assets</span>
+                                    </div>
+                                </div>
+                                <label class="toggle-wrapper">
+                                    <input type="checkbox" class="toggle-input" checked="">
+                                    <div class="toggle-track">
+                                        <div class="toggle-handle"></div>
+                                    </div>
+                                </label>
+                            </div>
+                        </div>
+
+                        <div class="mt-4 pt-4 border-t border-white/5">
+                            <button onclick="showToast('Cache Purged Successfully')"
+                                class="w-full py-2.5 rounded-lg bg-zinc-100 text-black text-sm font-medium hover:bg-white transition-all shadow-[0_0_20px_-5px_rgba(255,255,255,0.4)] btn-action relative overflow-hidden">
+                                Purge Cache
+                            </button>
+                        </div>
+                    </div>
+
+                </div>
+
+                <!-- Footer -->
+                <footer
+                    class="mt-12 mb-6 border-t border-white/5 pt-8 flex flex-col md:flex-row justify-between items-center text-xs text-zinc-600 animate-enter delay-5">
+                    <div class="flex gap-6 mb-4 md:mb-0 font-medium">
+                        <a href="#" class="hover:text-zinc-400 transition-colors">Status</a>
+                        <a href="#" class="hover:text-zinc-400 transition-colors">Documentation</a>
+                        <a href="#" class="hover:text-zinc-400 transition-colors">Support</a>
+                    </div>
+                    <div class="flex items-center gap-2">
+                        <span>Command Menu</span>
+                        <div
+                            class="flex items-center justify-center px-1.5 py-0.5 rounded bg-white/5 border border-white/10 font-mono text-[10px] text-zinc-400">
+                            <span class="text-[10px] mr-0.5">⌘</span>K
+                        </div>
+                    </div>
+                </footer>
+
+            </div>
+        </main>
+    </div>
+
+    <!-- Toast Notification -->
+    <div id="toast" class="toast">
+        <iconify-icon icon="lucide:check-circle-2" class="text-emerald-500" width="16"></iconify-icon>
+        <span id="toast-message">Action successful</span>
+    </div>
+
+    <script>
+        // Optimistic UI & Toast Logic
+        function showToast(message) {
+            const toast = document.getElementById('toast');
+            const msg = document.getElementById('toast-message');
+            msg.innerText = message;
+            toast.classList.add('show');
+
+            setTimeout(() => {
+                toast.classList.remove('show');
+            }, 3000);
+        }
+
+        // Toggle Interactivity with optimistic update
+        const toggles = document.querySelectorAll('.toggle-input');
+        toggles.forEach(toggle => {
+            toggle.addEventListener('change', function () {
+                const state = this.checked ? 'Enabled' : 'Disabled';
+                const settingName = this.closest('.flex').querySelector('.text-zinc-200').innerText;
+                showToast(`${settingName} ${state}`);
+            });
+        });
+    </script>
+
+</body>
+
+</html>

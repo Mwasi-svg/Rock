@@ -1,7 +1,8 @@
 {
   "$schema": "https://raw.githubusercontent.com/electron-userland/electron-builder/master/packages/app-builder-lib/scheme.json",
-  "appId": "YourAppID",
+  "appId": "com.rock.app",
   "asar": true,
+  "productName": "Rock",
   "directories": {
     "output": "release/${version}"
   },
@@ -10,7 +11,7 @@
     "dist"
   ],
   "mac": {
-    "artifactName": "${productName}_${version}.${ext}",
+    "artifactName": "Rock_${version}.${ext}",
     "target": [
       "dmg",
       "zip"
@@ -25,7 +26,8 @@
         ]
       }
     ],
-    "artifactName": "${productName}_${version}.${ext}"
+    "artifactName": "Rock_${version}.${ext}",
+    "icon": "assets/favicon.ico"
   },
   "nsis": {
     "oneClick": false,

@@ -23,6 +23,65 @@ contextBridge.exposeInMainWorld('ipcRenderer', {
   // ...
 })
 
+// --------- Data Persistence API ---------
+contextBridge.exposeInMainWorld('rockData', {
+  async getData(): Promise<unknown> {
+    return ipcRenderer.invoke('get-data')
+  },
+  async saveData(data: unknown): Promise<boolean> {
+    return ipcRenderer.invoke('save-data', data)
+  },
+  async getDataPath(): Promise<string> {
+    return ipcRenderer.invoke('get-data-path')
+  },
+})
+
+// --------- Git API ---------
+contextBridge.exposeInMainWorld('rockGit', {
+  async verifyRepo(repoPath: string): Promise<boolean> {
+    return ipcRenderer.invoke('git-verify-repo', repoPath)
+  },
+  async getStatus(repoPath: string): Promise<unknown> {
+    return ipcRenderer.invoke('git-status', repoPath)
+  },
+  async getLog(repoPath: string, limit?: number): Promise<unknown[]> {
+    return ipcRenderer.invoke('git-log', repoPath, limit)
+  },
+  async getBranches(repoPath: string): Promise<unknown[]> {
+    return ipcRenderer.invoke('git-branches', repoPath)
+  },
+  async getCurrentBranch(repoPath: string): Promise<string> {
+    return ipcRenderer.invoke('git-current-branch', repoPath)
+  },
+  async commit(repoPath: string, message: string, files: string[]): Promise<void> {
+    return ipcRenderer.invoke('git-commit', repoPath, message, files)
+  },
+  async push(repoPath: string): Promise<void> {
+    return ipcRenderer.invoke('git-push', repoPath)
+  },
+  async pull(repoPath: string): Promise<void> {
+    return ipcRenderer.invoke('git-pull', repoPath)
+  },
+  async fetch(repoPath: string): Promise<void> {
+    return ipcRenderer.invoke('git-fetch', repoPath)
+  },
+  async switchBranch(repoPath: string, branch: string): Promise<void> {
+    return ipcRenderer.invoke('git-switch-branch', repoPath, branch)
+  },
+  async createBranch(repoPath: string, branchName: string): Promise<void> {
+    return ipcRenderer.invoke('git-create-branch', repoPath, branchName)
+  },
+  async clone(url: string, destinationPath: string): Promise<void> {
+    return ipcRenderer.invoke('git-clone', url, destinationPath)
+  },
+  async getRemoteUrl(repoPath: string): Promise<string> {
+    return ipcRenderer.invoke('git-remote-url', repoPath)
+  },
+  async selectDirectory(): Promise<string | null> {
+    return ipcRenderer.invoke('dialog-open-directory')
+  },
+})
+
 // --------- Preload scripts loading ---------
 function domReady(condition: DocumentReadyState[] = ['complete', 'interactive']) {
   return new Promise(resolve => {
